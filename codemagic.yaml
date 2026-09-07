@@ -1,0 +1,42 @@
+workflows:
+  livecontainer-workflow:
+    name: Build LiveContainer iOS IPA
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      cocoapods: default
+      vars:
+        scheme: LiveContainer
+        archive_path: archive
+    scripts:
+      - name: Print Environment Info
+        script: |
+          xcodebuild -version
+          sw_vers
+      - name: Initialize Git Submodules
+        script: |
+          git submodule update --init --recursive
+      - name: Build LiveContainer Archive
+        script: |
+          set -e
+          xcodebuild archive \
+            -archivePath "$archive_path" \
+            -scheme "$scheme" \
+            -project "LiveContainer.xcodeproj" \
+            -sdk iphoneos \
+            -arch arm64 \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+      - name: Package IPA Files
+        script: |
+          set -e
+          which ldid >/dev/null 2>&1 || brew install ldid
+          sh .github/build_github.sh
+          ls -lh *.ipa
+    artifacts:
+      - "*.ipa"
+      - "*.xcarchive"
