@@ -697,6 +697,18 @@ int LiveContainerMain(int argc, char *argv[]) {
         if (launchUrl) [lcSharedDefaults removeObjectForKey:@"LCLaunchExtensionLaunchURL"];
     } while (0);
     
+    // Autonomous auto-boot: if no app is selected, boot directly into com.heri.iwin
+    if (!selectedApp && ![lcUserDefaults boolForKey:@"LCOpenUI"]) {
+        NSString *autoBoot = [lcUserDefaults stringForKey:@"LCAutoBootApp"] ?: @"com.heri.iwin";
+        NSString *docPath = [NSString stringWithFormat:@"%s/Documents", getenv("LC_HOME_PATH")];
+        NSString *appBundlePath = [NSString stringWithFormat:@"%@/Applications/%@", docPath, autoBoot];
+        NSString *sharedAppBundlePath = [NSString stringWithFormat:@"%@/Applications/%@", lcAppGroupPath, autoBoot];
+        if ([NSFileManager.defaultManager fileExistsAtPath:appBundlePath] || [NSFileManager.defaultManager fileExistsAtPath:sharedAppBundlePath]) {
+            selectedApp = autoBoot;
+            selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
+        }
+    }
+    
     NSString* lastLaunchDataUUID;
     if(!isLiveProcess) {
         lastLaunchDataUUID = [lcUserDefaults objectForKey:@"lastLaunchDataUUID"];
